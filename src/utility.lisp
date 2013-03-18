@@ -89,7 +89,8 @@
 	   :get-first-atom
 	   :with-regex-matches
 	   :with-rebindings
-	   :dlambda))
+	   :dlambda
+	   :with-readers))
 
 (in-package :utility)
 
@@ -577,3 +578,16 @@
 	 ,@(map-rows (function-key lambda-list &rest body)
 		     `(,function-key (apply (lambda(,@lambda-list) ,@body) ,args)) 
 		     function-specs)))))
+
+(defmacro with-readers(vars object-expr &body body)
+  (with-once-only(object-expr)
+    `(let ,(loop for var in vars collecting
+		(if (atom var)
+		    `(,var (,var ,object-expr))
+		    (progn
+		      (unless (second var) (error (% "with-readers has bad variable spec ~a in ~a" var vars)))
+		      (destructuring-bind (var accesor) var
+			(if (numberp accesor)
+			    `(,var (aref ,object-expr ,accesor)) 
+			    `(,var (,accesor ,object-expr)))))))
+       ,@body)))
