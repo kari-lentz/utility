@@ -503,7 +503,7 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      ,@body))
 
-(defmacro defeasyclass( name (&rest direct-superclasses) (&rest members) &key (export-all t))
+(defmacro defeasyclass( name (&rest direct-superclasses) (&rest members) &key export-all)
   (let ((sym-o (gensym))(sym-s (gensym)))
     (let ((exports))
       (when export-all (push `(export (list ,@(qmap (member) (list 'quote member) members) ,(list 'quote name))) exports))
