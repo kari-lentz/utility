@@ -90,7 +90,8 @@
 	   :with-regex-matches
 	   :with-rebindings
 	   :dlambda
-	   :with-readers))
+	   :with-readers
+	   :with-thread))
 
 (in-package :utility)
 
@@ -571,13 +572,14 @@
   `(let ,(qmap (var) `(,var (funcall ,lambda-expr ,var)) vars)
      ,@body))
 
-(defmacro dlambda(&rest function-specs)
+(defmacro dlambda(&body function-specs)
   (with-gensyms (key args)
     `(lambda(,key &rest ,args)
        (case ,key
 	 ,@(map-rows (function-key lambda-list &rest body)
 		     `(,function-key (apply (lambda(,@lambda-list) ,@body) ,args)) 
-		     function-specs)))))
+		     function-specs)
+	 (otherwise (error (% "undefined dlamba function:~a" ,key)))))))
 
 (defmacro with-readers(vars object-expr &body body)
   (with-once-only(object-expr)
@@ -591,3 +593,26 @@
 			    `(,var (aref ,object-expr ,accesor)) 
 			    `(,var (,accesor ,object-expr)))))))
        ,@body)))
+
+(with-full-eval
+  (defun double-up(bindings &rest ensures)
+    (let ((ret (mapcar (lambda(item) (if (atom item) (list item item) item)) bindings)))
+      (dolist (ensure ensures) 
+	(setf ret (pushnew (list ensure ensure) ret :test 'equal)))
+      ret)))
+
+(defmacro with-thread((name bindings thread-body) &body body) 
+  (with-gensyms (thread)
+    (let ((bindings (double-up bindings '*standard-output* '*error-output*)))
+      `(let ((,thread (bordeaux-threads:make-thread 
+		       (lambda() ,thread-body) 
+		       :initial-bindings (list ,@(loop for binding in bindings 
+						    collecting 
+						      (destructuring-bind (var value) binding
+							`(cons ,(list 'quote var) ,value)))) 
+		       :name ,name)))
+	 (unwind-protect
+	      (progn
+		,@body)
+	   (bordeaux-threads:join-thread ,thread))))))
+ 

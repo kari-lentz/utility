@@ -5,4 +5,4 @@
   ((:module src
     :components
     ((:file "utility"))))
-  :depends-on (cl-ppcre cffi))
+  :depends-on (cl-ppcre cffi bordeaux-threads))
