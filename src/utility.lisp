@@ -91,7 +91,8 @@
 	   :with-rebindings
 	   :dlambda
 	   :with-readers
-	   :with-thread))
+	   :with-thread
+	   :make-set))
 
 (in-package :utility)
 
@@ -616,3 +617,8 @@
 		,@body)
 	   (bordeaux-threads:join-thread ,thread))))))
  
+(defun make-set(list &key (test 'equalp))
+  (let ((items (make-hash-table :test test)))
+    (dolist (item list)
+      (setf (gethash item items) item))
+    (hash-table-keys items)))
