@@ -92,7 +92,8 @@
 	   :dlambda
 	   :with-readers
 	   :with-thread
-	   :make-set))
+	   :make-set
+	   :ensure-pairs))
 
 (in-package :utility)
 
@@ -374,8 +375,14 @@
 (defun dts-to-Y/M/D (&optional (dts (make-dts-now)))
   (format nil "~4,'0d/~2,'0d/~2,'0d" (dts-year dts) (dts-month dts) (dts-day dts)))
 
-(defun dts+(dts num-days)
-  (make-dts-from-ut (+ (dts-ut dts) (* *secs-per-day* num-days))))
+(defun dts+(dts quantity units)
+  (let ((diff (case units
+		(:seconds quantity)
+		(:minutes (* 60 quantity))
+		(:hours (* 60 60 quantity))
+		(:days (* *secs-per-day* quantity))
+		(otherwise (error (format nil "improper unit of ~a for dts+" units))))))
+  (make-dts-from-ut (+ (dts-ut dts) diff))))
 
 (define-condition barcode-dts-error (error)
   ((dts-str :initarg :dts-str :reader dts-str)
@@ -622,3 +629,10 @@
     (dolist (item list)
       (setf (gethash item items) item))
     (hash-table-keys items)))
+
+(defun ensure-pairs(seq &optional (f #'identity))
+  (qmap (item)
+	(destructuring-bind (x &optional (y (funcall f x)) &rest remaining) item
+	  (declare (ignore remaining))
+	  (list x y))
+	(qmap (item) (if (consp item) item (list item)) seq)))
