@@ -21,6 +21,7 @@
 	   :hash-table-keys
 	   :hash-table-values
 	   :hash-table-contents
+	   :hash-table-from-list
 	   :~
 	   :join
 	   :make-ctr
@@ -230,6 +231,12 @@
   (loop for value being the hash-values of hash-table
      using (hash-key key)
      collecting (list key value)))
+
+(defun hash-table-from-list(list &optional (test 'eql))
+  (let ((ht (make-hash-table :test test)))
+    (loop for (key value) in list do
+	 (setf (gethash key ht) value))
+    ht))
  
 (defun ~( regex str)
   (multiple-value-bind (begin-match end-match begin-groups end-groups) (ppcre:scan regex str)
