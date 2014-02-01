@@ -247,11 +247,14 @@
 (defun vmap( seq )
   (map 'vector (lambda(n)n) seq))
 
-(defun join( delim str-list)
-  (and str-list (if (cdr str-list) 
-		    (reduce (lambda(x y) (% "~a~a~a" x delim y)) str-list)
-		    (% "~a" (car str-list)))))
-
+(defun join(delim list)
+  (reduce (lambda(&optional (x nil x-p) (y nil y-p)) 
+	    (declare (ignore y-p))
+	    (if x-p 
+		(% "~a~a~a" x delim y)
+		""))
+	  (mapcar (lambda(item) (format nil "~a" item)) list)))
+		  
 (defun make-ctr( init &optional (delta 1) )
   (lambda()(post-fix init (incf init delta))))
 	  
