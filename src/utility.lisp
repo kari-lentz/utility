@@ -94,6 +94,7 @@
 	   :with-readers
 	   :with-thread
 	   :make-set
+	   :ensure-pair
 	   :ensure-pairs))
 
 (in-package :utility)
@@ -640,9 +641,10 @@
       (setf (gethash item items) item))
     (hash-table-keys items)))
 
+(defun ensure-pair(item &optional (f #'identity))
+  (destructuring-bind (x &optional (y (funcall f x)) &rest remaining) (if (consp item) item (list item))
+    (declare (ignore remaining))
+    (list x y)))
+
 (defun ensure-pairs(seq &optional (f #'identity))
-  (qmap (item)
-	(destructuring-bind (x &optional (y (funcall f x)) &rest remaining) item
-	  (declare (ignore remaining))
-	  (list x y))
-	(qmap (item) (if (consp item) item (list item)) seq)))
+  (qmap (item) (ensure-pair item f) seq)) 
