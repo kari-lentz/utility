@@ -95,7 +95,9 @@
 	   :with-thread
 	   :make-set
 	   :ensure-pair
-	   :ensure-pairs))
+	   :ensure-pairs
+	   :with-struct-readers
+	   :with-struct))
 
 (in-package :utility)
 
@@ -648,3 +650,19 @@
 
 (defun ensure-pairs(seq &optional (f #'identity))
   (qmap (item) (ensure-pair item f) seq)) 
+
+(defmacro with-struct-readers((&rest slots) instance type &body body)
+  (with-once-only (instance)
+    `(let ,(loop for (slot-outer slot-inner) in (ensure-pairs slots) collecting
+		`(,slot-outer (,(.sym type '- slot-inner) ,instance)))
+       ,@body)))
+
+(defmacro with-struct((&rest slots) instance type &body body)
+  (with-once-only(instance)
+    `(macrolet 
+	 ,(loop for (slot-outer slot-inner) in (ensure-pairs slots) 
+	     collecting
+	       `(,slot-outer
+		 ()
+		 `(,(.sym ',type '- ',slot-inner) ,',instance)))
+       ,@body)))
