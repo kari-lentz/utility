@@ -559,16 +559,16 @@
   `(let ((it ,test))
      (if it ,then ,else)))
 
-(defmacro map-rows(lambda-list function list)
+(defmacro map-rows(list lambda-list &body function-body)
   (with-gensyms (lambda-spec)
     `(qmap (,lambda-spec) 
 	   (destructuring-bind ,lambda-list ,lambda-spec 
-	     ,function)
+	     ,@function-body)
 	   ,list)))
 
 (defmacro with-regexes(regex-specs &body body)
   `(let
-       ,(map-rows (var-name regex) `(,var-name (ppcre::create-scanner ,regex)) regex-specs)
+       ,(map-rows regex-specs (var-name regex) `(,var-name (ppcre::create-scanner ,regex)))
      ,@body))
 
 (with-full-eval
@@ -597,9 +597,9 @@
   (with-gensyms (key args)
     `(lambda(,key &rest ,args)
        (case ,key
-	 ,@(map-rows (function-key lambda-list &rest body)
-		     `(,function-key (apply (lambda(,@lambda-list) ,@body) ,args)) 
-		     function-specs)
+	 ,@(map-rows function-specs
+		     (function-key lambda-list &rest body)
+		     `(,function-key (apply (lambda(,@lambda-list) ,@body) ,args)))
 	 (otherwise (error (% "undefined dlamba function:~a" ,key)))))))
 
 (defmacro with-readers(vars object-expr &body body)
@@ -659,10 +659,10 @@
 
 (defmacro with-struct((&rest slots) instance type &body body)
   (with-once-only(instance)
-    `(macrolet 
+    `(symbol-macrolet 
 	 ,(loop for (slot-outer slot-inner) in (ensure-pairs slots) 
 	     collecting
 	       `(,slot-outer
-		 ()
-		 `(,(.sym ',type '- ',slot-inner) ,',instance)))
+		 (,(.sym type '- slot-inner) ,instance)))
        ,@body)))
+
